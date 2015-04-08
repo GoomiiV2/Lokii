@@ -43,6 +43,11 @@
 			Set a function to be called when the webpack is downloaded.
 			Only called if a pack is downloaded so if the packs are up to date then it won't be called
 			
+		Lokii.ReplaceKeysOnFrame(frame); [Frame]
+			Will auto set any text widgets to the key set in the widgets "tag" field.
+			eg. tag="$TITLE" will set that widgets text to the text linked to the "TITLE" key
+			This is handy for once of lables.
+			
 	Lang file example:
 		LANG = jsontotable(
 		{
@@ -110,6 +115,7 @@ PRIVATE.ActiveLang = "";
 PRIVATE.VERSION_ID = "Lokii_Lang_Ver";
 PRIVATE.CACHED_PREFIX = "Lokii_Lang_";
 PRIVATE.CACHED_LANG_LIST = "Lokii_Lang_List";
+PRIVATE.TAG_IS_KEY_MARKER = "$";
 PRIVATE.HTTP_MAX_RETRIES = 3;
 PRIVATE.ForceLocal = false;
 PRIVATE.LocalLangVer = 1;
@@ -225,6 +231,10 @@ function Lokii.LoadWebPack(HOST)
 	end});
 end -- The end of the ends end end
 
+function Lokii.ReplaceKeysOnFrame(frame)
+	PRIVATE.SetTextOnFrameChildren(frame)
+end
+
 function PRIVATE.SimpleCopy(orig)
 	local copy = {};
 	for i, v in next, orig, nil do
@@ -263,5 +273,34 @@ function PRIVATE.WebRequest(prams)
 				Debug.Error("Error trying to get", prams.url, "Error message:", tostring(err), "Retrying.");
 			end 
 		end);
+	end
+end
+
+
+--============================================================
+-- Replace keys on text widgets with a localized string
+--============================================================
+function PRIVATE.SetTextOnFrameChildren(frame) -- Can't think of a nice name
+	for i = 1, frame:GetChildCount(), 1 do
+		PRIVATE.RecurseWidget(frame:GetChild(i))
+	end
+end
+
+function PRIVATE.RecurseWidget(widget)
+	if widget:GetType() == "Text" then
+		local tagKey = widget:GetTag();
+
+		if tagKey and tagKey ~= "" and tagKey:sub(1, #PRIVATE.TAG_IS_KEY_MARKER) == PRIVATE.TAG_IS_KEY_MARKER then
+			local key = tagKey:sub(#PRIVATE.TAG_IS_KEY_MARKER+1);
+			local text = Lokii.GetString(key);
+
+			widget:SetText(text);
+		end
+	end
+
+	for i = 1, widget:GetChildCount(), 1 do
+		local child = widget:GetChild(i)
+
+		PRIVATE.RecurseWidget(child)
 	end
 end
